@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CV × JD Match Reviewer</title>
+  <!-- PDF.js for client-side PDF text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #e63946;
+      --red-dk: #c0202e;
+      --bg:     #f5f5f5;
+      --surface:#ffffff;
+      --card:   #ffffff;
+      --border: #e0e0e0;
+      --text:   #1a1a1a;
+      --muted:  #767676;
+      --green:  #2e7d32;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--red); }
+
+    .tagline {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ── Hero ─────────────────────────────────────────────── */
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 0;
+    }
+
+    .hero-lines {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .hero-sub {
+      font-size: 0.88rem;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+    }
+
+    .hero-sub span { color: var(--red); font-weight: 600; }
+
+    /* ── Main container ───────────────────────────────────── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ── Controls row ─────────────────────────────────────── */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .lang-toggle {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .lang-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.35rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .lang-btn:hover { border-color: var(--red); color: var(--text); }
+    .lang-btn.active {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+
+    /* ── Input grid ───────────────────────────────────────── */
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+      align-items: stretch;
+    }
+
+    @media (max-width: 720px) {
+      .input-grid { grid-template-columns: 1fr; }
+    }
+
+    .input-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .panel-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* The card border wraps everything — textarea + attach bar */
+    .input-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--card);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: border-color 0.2s;
+    }
+    .input-panel:focus-within { border-color: var(--red); }
+
+    .input-panel textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 0.9rem 1rem;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      resize: none;
+      min-height: 260px;
+      outline: none;
+      font-family: inherit;
+    }
+    .input-panel textarea::placeholder { color: #adb5bd; }
+    .input-panel textarea:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Image preview inside the panel */
+    .cv-image-preview {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .cv-image-preview.visible { display: flex; }
+    .cv-image-preview img {
+      max-height: 180px;
+      max-width: 100%;
+      border-radius: 6px;
+      object-fit: contain;
+      border: 1px solid var(--border);
+    }
+    .cv-image-label { font-size: 0.78rem; color: var(--muted); }
+
+    /* Attach bar — sits at the bottom of the CV panel */
+    .cv-attach-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+      flex-wrap: wrap;
+    }
+
+    .attach-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .cv-file-badge {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      color: #166534;
+      font-weight: 600;
+      flex: 1;
+      overflow: hidden;
+    }
+    .cv-file-badge.visible { display: flex; }
+    .cv-file-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .cv-file-badge-extra { color: var(--muted); font-weight: 400; }
+
+    .btn-attach {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .btn-attach:hover { border-color: var(--red); color: var(--red); }
+
+    .btn-clear-cv {
+      background: transparent;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-clear-cv:hover { background: #fee2e2; }
+
+    /* Drag-over highlight */
+    .input-panel.drag-over { border-color: var(--red); background: #fff8f8; }
+
+    /* ── Analyse button ───────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn-analyse {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 0.9rem 3rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-analyse:hover { background: var(--red-dk); }
+    .btn-analyse:active { transform: scale(0.97); }
+    .btn-analyse:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.9rem 2rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+    }
+    .btn-reset:hover { border-color: var(--muted); color: var(--text); }
+    .btn-reset.visible { display: block; }
+
+    /* ── Loading ──────────────────────────────────────────── */
+    .loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 3rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .loader.visible { display: flex; }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Results ──────────────────────────────────────────── */
+    #results { display: none; }
+    #results.visible { display: block; }
+
+    .result-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .result-section h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    /* Score section */
+    .score-section { border-left: 4px solid var(--red); }
+
+    .score-display {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .score-number {
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--red);
+      line-height: 1;
+    }
+
+    .score-denom {
+      font-size: 1.5rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--red);
+      border-radius: 4px;
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+
+    .score-caption {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* List sections */
+    .result-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .result-list li {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      padding-left: 1.2rem;
+      position: relative;
+      color: #374151;
+    }
+
+    .result-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--red);
+      font-size: 0.8rem;
+    }
+
+    /* Quick wins */
+    .rewrite-pair {
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .rewrite-pair:last-child { margin-bottom: 0; }
+
+    .rewrite-original {
+      background: #fff1f2;
+      padding: 0.75rem 1rem;
+      font-size: 0.87rem;
+      color: #991b1b;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .rewrite-improved {
+      background: #f0fdf4;
+      padding: 0.75rem 1rem;
+      font-size: 0.87rem;
+      color: #166534;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .rewrite-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      margin-top: 0.1rem;
+    }
+
+    .rewrite-original .rewrite-label { color: #dc2626; }
+    .rewrite-improved .rewrite-label { color: #16a34a; }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid #86efac;
+      color: #16a34a;
+      padding: 0.2rem 0.6rem;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { background: #dcfce7; }
+    .copy-btn.copied { color: #fff; background: var(--green); border-color: var(--green); }
+
+    /* Keywords */
+    .keyword-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .keyword-tag {
+      background: #fff1f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    /* Verdict section */
+    .verdict-text {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    /* ── Error ────────────────────────────────────────────── */
+    .error-box {
+      background: #fff1f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    .error-box.visible { display: block; }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div>
+      <div class="logo">CV <span>×</span> JD</div>
+      <div class="tagline">Match Reviewer · AI-Powered</div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <p class="hero-lines" id="heroLines">Paste your CV.<br>Paste the job.<br>Get honest feedback.</p>
+    <p class="hero-sub" id="heroSub">Match score · Gap analysis · Rewritten bullet points · ATS keywords</p>
+  </section>
+
+  <!-- Main -->
+  <main>
+
+    <!-- Controls row -->
+    <div class="controls-row">
+      <div id="pageHint" style="font-size:0.82rem; color:var(--muted);">Paste your job description and CV, or attach a file</div>
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="English">EN</button>
+        <button class="lang-btn" data-lang="French">FR</button>
+        <button class="lang-btn" data-lang="Arabic">AR</button>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="input-grid">
+
+      <!-- Job Description -->
+      <div class="input-card">
+        <div class="panel-label" id="jdLabel">Job Description</div>
+        <div class="input-panel">
+          <textarea id="jdInput" placeholder="Paste the full job description here — including responsibilities, requirements, and any preferred qualifications…"></textarea>
+        </div>
+      </div>
+
+      <!-- CV — with attach bar embedded inside the card -->
+      <div class="input-card">
+        <div class="panel-label" id="cvLabel">Your CV / Resume</div>
+        <div class="input-panel" id="cvPanel">
+
+          <!-- Image preview (shown when image attached) -->
+          <div class="cv-image-preview" id="cvImagePreview">
+            <img id="cvImageThumb" src="" alt="CV preview" />
+            <span class="cv-image-label" id="cvImageLabel"></span>
+          </div>
+
+          <!-- Textarea -->
+          <textarea id="cvInput" placeholder="Paste or type your CV here…"></textarea>
+
+          <!-- Attach bar at the bottom of the card -->
+          <div class="cv-attach-bar">
+            <!-- Badge when file loaded -->
+            <div class="cv-file-badge" id="cvFileBadge">
+              <span>📄</span>
+              <span class="cv-file-badge-name" id="cvFileName"></span>
+              <span class="cv-file-badge-extra" id="cvFileExtra"></span>
+            </div>
+            <!-- Hint when nothing loaded -->
+            <span class="attach-hint" id="attachHint">PDF · TXT · image</span>
+
+            <input type="file" id="cvFileInput" accept=".pdf,.txt,.jpg,.jpeg,.png,.webp" style="display:none" />
+            <label class="btn-attach" id="attachBtnLabel" for="cvFileInput">📎 Attach file</label>
+            <button id="clearCvBtn" class="btn-clear-cv" style="display:none">✕</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button class="btn-analyse" id="analyseBtn">Analyse Match</button>
+      <button class="btn-reset" id="resetBtn">↩ Analyse Another</button>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <span id="loaderText">Analysing your match…</span>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+
+      <!-- Score -->
+      <div class="result-section score-section">
+        <h2 id="h2Score">Match Score</h2>
+        <div class="score-display">
+          <span class="score-number" id="scoreNumber">—</span>
+          <span class="score-denom">/100</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="score-caption" id="scoreCaption"></div>
+      </div>
+
+      <!-- Strengths -->
+      <div class="result-section">
+        <h2 id="h2Strengths">Strengths — What already lands</h2>
+        <ul class="result-list" id="strengthsList"></ul>
+      </div>
+
+      <!-- Gaps -->
+      <div class="result-section">
+        <h2 id="h2Gaps">Gaps — What's missing or weak</h2>
+        <ul class="result-list" id="gapsList"></ul>
+      </div>
+
+      <!-- Quick Wins -->
+      <div class="result-section">
+        <h2 id="h2QuickWins">Quick Wins — Rewrite these lines</h2>
+        <div id="quickWinsContent"></div>
+      </div>
+
+      <!-- Keywords -->
+      <div class="result-section">
+        <h2 id="h2Keywords">Keywords to Add</h2>
+        <div class="keyword-list" id="keywordsList"></div>
+      </div>
+
+      <!-- Verdict -->
+      <div class="result-section">
+        <h2 id="h2Verdict">Verdict</h2>
+        <div class="verdict-text" id="verdictText"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    CV × JD Match Reviewer · Built with Claude AI
+  </footer>
+
+  <script>
+    // No API key here — it lives in the server environment variable.
+
+    // ── PDF.js worker ──────────────────────────────────────
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // ── State ──────────────────────────────────────────────
+    let selectedLang  = 'English';
+    let cvImageData   = null;
+    let cvMode        = 'text';
+
+    // ── Translations ───────────────────────────────────────
+    const T = {
+      English: {
+        tagline:      'Match Reviewer · AI-Powered',
+        hint:         'Paste your job description and CV, or attach a file',
+        jdLabel:      'Job Description',
+        jdPh:         'Paste the full job description here — including responsibilities, requirements, and any preferred qualifications…',
+        cvLabel:      'Your CV / Resume',
+        cvPh:         'Paste or type your CV here…',
+        attachHint:   'PDF · TXT · image',
+        attachBtn:    '📎 Attach file',
+        analyseBtn:   'Analyse Match',
+        resetBtn:     '↩ Analyse Another',
+        loading:      'Analysing your match…',
+        loadingPdf:   'Extracting PDF text…',
+        errNoJd:      'Please paste a job description.',
+        errNoCv:      'Please paste your CV, or attach a PDF, TXT, or screenshot.',
+        h2Score:      'Match Score',
+        h2Strengths:  'Strengths — What already lands',
+        h2Gaps:       "Gaps — What's missing or weak",
+        h2QuickWins:  'Quick Wins — Rewrite these lines',
+        h2Keywords:   'Keywords to Add',
+        h2Verdict:    'Verdict',
+        heroLines:    'Paste your CV.<br>Paste the job.<br>Get honest feedback.',
+        heroSub:      'Match score · Gap analysis · Rewritten bullet points · ATS keywords',
+        dir: 'ltr'
+      },
+      French: {
+        tagline:      'Analyseur CV × Offre · IA',
+        hint:         "Collez votre offre d'emploi et votre CV, ou joignez un fichier",
+        jdLabel:      "Offre d'Emploi",
+        jdPh:         "Collez ici l'offre d'emploi complète — responsabilités, exigences, qualifications souhaitées…",
+        cvLabel:      'Votre CV',
+        cvPh:         'Collez ou tapez votre CV ici…',
+        attachHint:   'PDF · TXT · image',
+        attachBtn:    '📎 Joindre un fichier',
+        analyseBtn:   'Analyser',
+        resetBtn:     '↩ Nouvelle analyse',
+        loading:      'Analyse en cours…',
+        loadingPdf:   'Extraction du texte PDF…',
+        errNoJd:      "Veuillez coller une offre d'emploi.",
+        errNoCv:      'Veuillez coller votre CV ou joindre un fichier PDF, TXT ou une capture d\'écran.',
+        h2Score:      'Score de correspondance',
+        h2Strengths:  'Points forts — Ce qui correspond',
+        h2Gaps:       'Lacunes — Ce qui manque',
+        h2QuickWins:  'Gains rapides — Réécrire ces lignes',
+        h2Keywords:   'Mots-clés à ajouter',
+        h2Verdict:    'Verdict',
+        heroLines:    'Collez votre CV.<br>Collez l\'offre.<br>Obtenez un retour honnête.',
+        heroSub:      'Score de correspondance · Analyse des lacunes · Points reformulés · Mots-clés ATS',
+        dir: 'ltr'
+      },
+      Arabic: {
+        tagline:      'مُحلِّل السيرة الذاتية والوظيفة · ذكاء اصطناعي',
+        hint:         'الصق الوصف الوظيفي وسيرتك الذاتية، أو أرفق ملفًا',
+        jdLabel:      'الوصف الوظيفي',
+        jdPh:         'الصق الوصف الوظيفي كاملاً — المهام والمتطلبات والمؤهلات…',
+        cvLabel:      'سيرتك الذاتية',
+        cvPh:         'الصق سيرتك الذاتية هنا أو اكتبها…',
+        attachHint:   'PDF · TXT · صورة',
+        attachBtn:    '📎 إرفاق ملف',
+        analyseBtn:   'تحليل التطابق',
+        resetBtn:     '↩ تحليل جديد',
+        loading:      'جارٍ التحليل…',
+        loadingPdf:   'استخراج نص PDF…',
+        errNoJd:      'الرجاء لصق الوصف الوظيفي.',
+        errNoCv:      'الرجاء لصق سيرتك الذاتية أو إرفاق ملف PDF أو TXT أو صورة.',
+        h2Score:      'درجة التطابق',
+        h2Strengths:  'نقاط القوة — ما يتوافق بالفعل',
+        h2Gaps:       'الثغرات — ما يحتاج إلى تحسين',
+        h2QuickWins:  'إصلاحات سريعة — أعد صياغة هذه الأسطر',
+        h2Keywords:   'كلمات مفتاحية للإضافة',
+        h2Verdict:    'الحكم',
+        heroLines:    'الصق سيرتك الذاتية.<br>الصق الوظيفة.<br>احصل على تقييم صادق.',
+        heroSub:      'درجة التطابق · تحليل الثغرات · إعادة صياغة النقاط · كلمات ATS',
+        dir: 'rtl'
+      }
+    };
+
+    function applyLang(lang) {
+      const t = T[lang] || T.English;
+      document.documentElement.dir = t.dir;
+      document.getElementById('heroLines').innerHTML          = t.heroLines;
+      document.getElementById('heroSub').textContent          = t.heroSub;
+      document.querySelector('.tagline').textContent          = t.tagline;
+      document.getElementById('pageHint').textContent         = t.hint;
+      document.getElementById('jdLabel').textContent          = t.jdLabel;
+      document.getElementById('jdInput').placeholder          = t.jdPh;
+      document.getElementById('cvLabel').textContent          = t.cvLabel;
+      document.getElementById('cvInput').placeholder          = t.cvPh;
+      document.getElementById('attachHint').textContent       = t.attachHint;
+      document.getElementById('attachBtnLabel').textContent   = t.attachBtn;
+      document.getElementById('analyseBtn').textContent       = t.analyseBtn;
+      if (document.getElementById('resetBtn').classList.contains('visible'))
+        document.getElementById('resetBtn').textContent       = t.resetBtn;
+      document.getElementById('h2Score').textContent          = t.h2Score;
+      document.getElementById('h2Strengths').textContent      = t.h2Strengths;
+      document.getElementById('h2Gaps').textContent           = t.h2Gaps;
+      document.getElementById('h2QuickWins').textContent      = t.h2QuickWins;
+      document.getElementById('h2Keywords').textContent       = t.h2Keywords;
+      document.getElementById('h2Verdict').textContent        = t.h2Verdict;
+    }
+
+    // ── Language toggle ────────────────────────────────────
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedLang = btn.dataset.lang;
+        applyLang(selectedLang);
+      });
+    });
+
+    // ── CV file input ──────────────────────────────────────
+    const cvFileInput    = document.getElementById('cvFileInput');
+    const cvInput        = document.getElementById('cvInput');
+    const cvFileBadge    = document.getElementById('cvFileBadge');
+    const cvFileName     = document.getElementById('cvFileName');
+    const cvFileExtra    = document.getElementById('cvFileExtra');
+    const cvImagePreview = document.getElementById('cvImagePreview');
+    const cvImageThumb   = document.getElementById('cvImageThumb');
+    const cvImageLabel   = document.getElementById('cvImageLabel');
+    const clearCvBtn     = document.getElementById('clearCvBtn');
+    const attachHint     = document.getElementById('attachHint');
+    const cvPanel        = document.getElementById('cvPanel');
+
+    cvFileInput.addEventListener('change', () => {
+      const file = cvFileInput.files[0];
+      if (file) handleCvFile(file);
+    });
+
+    // Drag-and-drop on the whole CV panel
+    cvPanel.addEventListener('dragover', e => {
+      e.preventDefault();
+      cvPanel.classList.add('drag-over');
+    });
+    cvPanel.addEventListener('dragleave', e => {
+      if (!cvPanel.contains(e.relatedTarget)) cvPanel.classList.remove('drag-over');
+    });
+    cvPanel.addEventListener('drop', e => {
+      e.preventDefault();
+      cvPanel.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleCvFile(file);
+    });
+
+    async function handleCvFile(file) {
+      const name = file.name;
+      const ext  = name.split('.').pop().toLowerCase();
+
+      clearCvState();
+
+      if (['jpg','jpeg','png','webp'].includes(ext)) {
+        // ── Image mode ──────────────────────────────────
+        await loadCvImage(file);
+      } else if (ext === 'txt') {
+        // ── Plain text ──────────────────────────────────
+        const text = await file.text();
+        cvInput.value = text;
+        showTextBadge(name, `${countWords(text)} words`);
+      } else if (ext === 'pdf') {
+        // ── PDF via PDF.js ──────────────────────────────
+        if (typeof pdfjsLib === 'undefined') {
+          showError('PDF.js failed to load. Try refreshing, or paste the CV as text.');
+          return;
+        }
+        document.getElementById('loaderText').textContent = T[selectedLang].loadingPdf;
+        document.getElementById('loader').classList.add('visible');
+        try {
+          const text = await extractPdfText(file);
+          cvInput.value = text;
+          showTextBadge(name, `${countWords(text)} words extracted`);
+        } catch (e) {
+          showError('Could not read PDF: ' + e.message);
+        } finally {
+          document.getElementById('loader').classList.remove('visible');
+          document.getElementById('loaderText').textContent = T[selectedLang].loading;
+        }
+      } else {
+        showError('Unsupported file type. Please attach a PDF, TXT, JPG, PNG, or WEBP.');
+        return;
+      }
+
+      clearCvBtn.style.display = 'inline-flex';
+      // Reset file input so the same file can be re-selected after clearing
+      cvFileInput.value = '';
+    }
+
+    async function loadCvImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const dataUrl   = e.target.result;
+          const base64    = dataUrl.split(',')[1];
+          const mediaType = file.type || 'image/jpeg';
+
+          cvImageData = { base64, mediaType };
+          cvMode      = 'image';
+
+          // Show thumbnail
+          cvImageThumb.src     = dataUrl;
+          cvImageLabel.textContent = file.name;
+          cvImagePreview.classList.add('visible');
+
+          // Hide textarea (image sent directly to Claude)
+          cvInput.style.display = 'none';
+          resolve();
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function extractPdfText(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf         = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const parts       = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page    = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const text    = content.items.map(item => item.str).join(' ');
+        parts.push(text);
+      }
+      return parts.join('\n\n');
+    }
+
+    function showTextBadge(name, extra) {
+      cvFileName.textContent  = name;
+      cvFileExtra.textContent = extra;
+      cvFileBadge.classList.add('visible');
+      attachHint.style.display = 'none';
+      cvMode = 'text';
+    }
+
+    function clearCvState() {
+      cvInput.value = '';
+      cvInput.disabled = false;
+      cvInput.style.display = '';
+      // Badge + hint
+      cvFileBadge.classList.remove('visible');
+      attachHint.style.display = '';
+      // Image
+      cvImagePreview.classList.remove('visible');
+      cvImageThumb.src = '';
+      cvImageData = null;
+      cvMode = 'text';
+    }
+
+    clearCvBtn.addEventListener('click', () => {
+      clearCvState();
+      clearCvBtn.style.display = 'none';
+    });
+
+    function countWords(str) {
+      return str.trim().split(/\s+/).filter(Boolean).length;
+    }
+
+    // ── Reset ──────────────────────────────────────────────
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('jdInput').value = '';
+      clearCvState();
+      clearCvBtn.style.display = 'none';
+      document.getElementById('results').classList.remove('visible');
+      document.getElementById('resetBtn').classList.remove('visible');
+      document.getElementById('errorBox').classList.remove('visible');
+      document.getElementById('analyseBtn').disabled = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // ── Prompts ────────────────────────────────────────────
+    const SYSTEM_SUFFIX = `
+
+Rules:
+- Be honest, not encouraging. A 40/100 is a 40/100.
+- Never hallucinate skills not present in the CV.
+- Tailor every section to the specific job description given — no generic advice.`;
+
+    const FORMAT_INSTRUCTIONS = `Your task is to produce a structured match report using EXACTLY these section headers (copy them character-for-character — do NOT translate them):
+
+---
+
+**MATCH SCORE: [X/100]**
+One sentence explaining the score honestly.
+
+---
+
+**STRENGTHS — What already lands**
+List 3-5 bullet points of things in the CV that directly match the job description. Be specific — quote or reference exact phrases from both documents.
+
+---
+
+**GAPS — What's missing or weak**
+List 3-5 bullet points of skills, experiences, or keywords that appear in the job description but are absent or undersold in the CV. Be direct, not gentle.
+
+---
+
+**QUICK WINS — Rewrite these lines**
+Pick 2-3 bullet points from the CV that are weak or generic and rewrite them to better match the job description. Show the original and the improved version side by side.
+
+Format each one as:
+❌ Original: [original text]
+✅ Rewritten: [improved text]
+
+---
+
+**KEYWORDS TO ADD**
+List 5-8 keywords or phrases from the job description that should appear in the CV but currently don't. Separate them with commas or list them on separate lines.
+
+---
+
+**VERDICT**
+2-3 sentences. Would you apply? What's the one thing to fix before submitting?
+
+CRITICAL: The 7 section headers above (**MATCH SCORE**, **STRENGTHS**, **GAPS**, **QUICK WINS**, **KEYWORDS TO ADD**, **VERDICT**) must appear verbatim in English exactly as written. Translate only the content inside each section.`;
+
+    function buildTextPrompt(jd, cv) {
+      return `You will be given:
+1. A JOB DESCRIPTION
+2. A CV / RESUME
+
+${FORMAT_INSTRUCTIONS}
+${SYSTEM_SUFFIX}
+
+JOB DESCRIPTION:
+${jd}
+
+CV:
+${cv}`;
+    }
+
+    function buildImagePromptText(jd) {
+      return `You will be given:
+1. A JOB DESCRIPTION (as text below)
+2. A CV / RESUME (as an attached image — read it carefully before analysing)
+
+${FORMAT_INSTRUCTIONS}
+${SYSTEM_SUFFIX}
+
+JOB DESCRIPTION:
+${jd}
+
+CV: [See the attached image]`;
+    }
+
+    // ── Parse response ─────────────────────────────────────
+    function parseResponse(text) {
+      const result = {
+        score: null, scoreCaption: '',
+        strengths: [], gaps: [], quickWins: [], keywords: [], verdict: ''
+      };
+
+      const scoreMatch = text.match(/\*\*MATCH SCORE:\s*(\d+)\/100\*\*\s*\n([^\n]+)/i);
+      if (scoreMatch) {
+        result.score        = parseInt(scoreMatch[1], 10);
+        result.scoreCaption = scoreMatch[2].trim();
+      }
+
+      function extractSection(src, header) {
+        const esc = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re  = new RegExp(esc + '[\\s\\S]*?\\n([\\s\\S]*?)(?=\\n---\\n|\\n\\*\\*[A-Z]|$)', 'i');
+        const m   = src.match(re);
+        return m ? m[1].trim() : '';
+      }
+
+      result.strengths = parseList(extractSection(text, '**STRENGTHS'));
+      result.gaps      = parseList(extractSection(text, '**GAPS'));
+      result.quickWins = parseRewrites(extractSection(text, '**QUICK WINS'));
+      result.keywords  = parseKeywords(extractSection(text, '**KEYWORDS TO ADD'));
+      result.verdict   = extractSection(text, '**VERDICT');
+
+      return result;
+    }
+
+    function parseList(raw) {
+      if (!raw) return [];
+      return raw.split('\n')
+        .map(l => l.replace(/^[-•*]\s*/, '').trim())
+        .filter(l => l.length > 5);
+    }
+
+    function parseRewrites(raw) {
+      if (!raw) return [];
+      const pairs   = [];
+      const pattern = /❌\s*Original:\s*(.+?)[\n\r]+✅\s*Rewritten:\s*(.+?)(?=❌|$)/gs;
+      let m;
+      while ((m = pattern.exec(raw)) !== null) {
+        pairs.push({ original: m[1].trim(), improved: m[2].trim() });
+      }
+      if (pairs.length === 0) {
+        for (const chunk of raw.split(/\n(?=\d+\.|❌)/g)) {
+          const orig = chunk.match(/(?:Original|❌)[:\s]+(.+)/i);
+          const imp  = chunk.match(/(?:Rewritten|✅)[:\s]+(.+)/i);
+          if (orig && imp) pairs.push({ original: orig[1].trim(), improved: imp[1].trim() });
+        }
+      }
+      return pairs;
+    }
+
+    function parseKeywords(raw) {
+      if (!raw) return [];
+      const keywords = [];
+      for (const line of raw.split('\n').map(l => l.replace(/^[-•*\d.]\s*/, '').trim()).filter(Boolean)) {
+        keywords.push(...line.split(',').map(s => s.trim()).filter(Boolean));
+      }
+      return [...new Set(keywords)].filter(k => k.length > 1);
+    }
+
+    // ── Render results ─────────────────────────────────────
+    function renderResults(data) {
+      document.getElementById('scoreNumber').textContent = data.score !== null ? data.score : '?';
+      document.getElementById('scoreCaption').textContent = data.scoreCaption;
+
+      const colour = data.score >= 70 ? '#16a34a' : data.score >= 45 ? '#d97706' : 'var(--red)';
+      document.getElementById('scoreNumber').style.color     = colour;
+      document.getElementById('progressFill').style.background = colour;
+      setTimeout(() => {
+        document.getElementById('progressFill').style.width = (data.score || 0) + '%';
+      }, 100);
+
+      renderList('strengthsList', data.strengths);
+      renderList('gapsList',      data.gaps);
+
+      const qwContainer = document.getElementById('quickWinsContent');
+      qwContainer.innerHTML = '';
+      if (!data.quickWins.length) {
+        qwContainer.innerHTML = '<p style="color:var(--muted);font-size:.88rem">No specific rewrites identified.</p>';
+      } else {
+        data.quickWins.forEach(pair => {
+          const div = document.createElement('div');
+          div.className = 'rewrite-pair';
+          div.innerHTML = `
+            <div class="rewrite-original">
+              <span class="rewrite-label">❌ Original</span>
+              <span>${escapeHtml(pair.original)}</span>
+            </div>
+            <div class="rewrite-improved">
+              <div style="display:flex;gap:.6rem;flex:1">
+                <span class="rewrite-label">✅ Rewritten</span>
+                <span>${escapeHtml(pair.improved)}</span>
+              </div>
+              <button class="copy-btn" data-text="${escapeAttr(pair.improved)}">Copy</button>
+            </div>`;
+          qwContainer.appendChild(div);
+        });
+        qwContainer.querySelectorAll('.copy-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            navigator.clipboard.writeText(btn.dataset.text).then(() => {
+              btn.textContent = 'Copied!';
+              btn.classList.add('copied');
+              setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            });
+          });
+        });
+      }
+
+      const kwContainer = document.getElementById('keywordsList');
+      kwContainer.innerHTML = '';
+      data.keywords.forEach(kw => {
+        const span = document.createElement('span');
+        span.className = 'keyword-tag';
+        span.textContent = kw;
+        kwContainer.appendChild(span);
+      });
+
+      document.getElementById('verdictText').innerHTML =
+        escapeHtml(data.verdict).replace(/\n/g, '<br>');
+
+      document.getElementById('results').classList.add('visible');
+      const resetBtn = document.getElementById('resetBtn');
+      resetBtn.textContent = T[selectedLang].resetBtn;
+      resetBtn.classList.add('visible');
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderList(id, items) {
+      const ul = document.getElementById(id);
+      ul.innerHTML = '';
+      if (!items.length) { ul.innerHTML = '<li>No items identified.</li>'; return; }
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        ul.appendChild(li);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escapeAttr(str) {
+      return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ── Analyse ────────────────────────────────────────────
+    document.getElementById('analyseBtn').addEventListener('click', async () => {
+      const jd     = document.getElementById('jdInput').value.trim();
+      const cv     = cvInput.value.trim();
+      const errBox = document.getElementById('errorBox');
+      errBox.classList.remove('visible');
+
+      if (!jd) { showError(T[selectedLang].errNoJd); return; }
+      if (cvMode === 'text' && !cv) { showError(T[selectedLang].errNoCv); return; }
+
+      const btn = document.getElementById('analyseBtn');
+      btn.disabled = true;
+      document.getElementById('loaderText').textContent = T[selectedLang].loading;
+      document.getElementById('loader').classList.add('visible');
+      document.getElementById('results').classList.remove('visible');
+
+      try {
+        // Build message content (Groq / OpenAI-compatible format)
+        // System message enforces language — much more reliable than burying it in the prompt
+        const systemMsg = {
+          role: 'system',
+          content: `You are an expert hiring consultant and senior recruiter with 15+ years of experience. You MUST write your entire response in ${selectedLang}. Do not use any other language, even if the documents are in a different language.`
+        };
+
+        let messages;
+        if (cvMode === 'image' && cvImageData) {
+          messages = [
+            systemMsg,
+            { role: 'user', content: [
+              { type: 'text', text: buildImagePromptText(jd) },
+              { type: 'image_url', image_url: { url: `data:${cvImageData.mediaType};base64,${cvImageData.base64}` } }
+            ]}
+          ];
+        } else {
+          messages = [
+            systemMsg,
+            { role: 'user', content: buildTextPrompt(jd, cv) }
+          ];
+        }
+
+        // Use vision-capable model for images, fast text model otherwise
+        const model = (cvMode === 'image')
+          ? 'meta-llama/llama-4-maverick-17b-128e-instruct'
+          : 'llama-3.3-70b-versatile';
+
+        // Call our own server — key never touches the browser
+        const response = await fetch('/api/analyse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, max_tokens: 2000, messages })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err?.error?.message || `API error ${response.status}`);
+        }
+
+        const data   = await response.json();
+        const text   = data.choices?.[0]?.message?.content || '';
+        const parsed = parseResponse(text);
+        renderResults(parsed);
+
+      } catch (err) {
+        showError(err.message || 'Something went wrong. Check your API key and try again.');
+        btn.disabled = false;
+      } finally {
+        document.getElementById('loader').classList.remove('visible');
+      }
+    });
+
+    function showError(msg) {
+      const box = document.getElementById('errorBox');
+      box.textContent = msg;
+      box.classList.add('visible');
+    }
+  </script>
+</body>
+</html>
