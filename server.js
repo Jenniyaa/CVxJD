@@ -49,7 +49,7 @@ app.use(express.static(path.join(__dirname)));
 
 // Root → serve the app
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'CVxJD.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
