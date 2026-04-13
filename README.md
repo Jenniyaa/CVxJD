@@ -1,0 +1,1 @@
+AI-powered tool that scores your CV against a job description, identifies gaps, rewrites your weakest bullet points, and surfaces ATS keywords — in English, French, or Arabic. Paste a job posting, add your CV (text, PDF, or screenshot), get honest feedback in seconds. Built with vanilla JS and the Anthropic API. No install, no backend — open the file and go.
